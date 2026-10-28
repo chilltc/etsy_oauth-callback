@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!-- 不把本页网址（含授权码）通过 Referer 发给任何网站 -->
+<meta name="referrer" content="no-referrer">
+<!-- 不加载任何外部文件，不能向任何地址发请求；只能把浏览器跳回本机工作台 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>授权回调</title>
+<style>
+  body { font: 16px/1.7 -apple-system, "PingFang SC", sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1f2420; }
+  .box { background: #f1efe8; border-radius: 10px; padding: 12px 14px; word-break: break-all; font-size: 14px; }
+  .bad { color: #b4412f; }
+  a.btn { display: inline-block; background: #3f6b4f; color: #fff; padding: 8px 14px; border-radius: 8px; text-decoration: none; }
+</style>
+</head>
+<body>
+<h2>Etsy 授权回调</h2>
+<p>这是店主自用的店铺看板的授权回调页。它是静态网页，不保存、不上传任何东西，只把授权码交回你电脑上的看板。</p>
+<div id="out"><p>没有收到授权码。</p></div>
+<script>
+"use strict";
+// 看板只在本机运行。这里的地址必须和看板里设置的一致。
+var LOCAL = "http://localhost:8770/oauth/redirect";
+var SAFE = /^[A-Za-z0-9._~-]{1,512}$/;
+var q = new URLSearchParams(location.search);
+var code = q.get("code"), state = q.get("state"), err = q.get("error"), demo = q.has("demo");
+var out = document.getElementById("out");
+// 读到以后，立刻把授权码从地址栏和浏览记录里去掉。
+if (location.search) history.replaceState(null, "", location.pathname);
+function text(tag, s, cls) { var e = document.createElement(tag); e.textContent = s; if (cls) e.className = cls; return e; }
+out.textContent = "";
+if (err) {
+  out.appendChild(text("p", "Etsy 返回错误：" + err + " " + (q.get("error_description") || ""), "bad"));
+} else if (code && state && SAFE.test(code) && SAFE.test(state)) {
+  var target = LOCAL + "?" + new URLSearchParams({ code: code, state: state }).toString();
+  var a = document.createElement("a"); a.href = target; a.className = "btn"; a.textContent = "交回本机看板";
+  out.appendChild(text("p", demo ? "演示模式：不自动跳转。" : "1 秒后自动交回本机看板。没有跳转就点下面的按钮。"));
+  out.appendChild(a);
+  out.appendChild(text("p", "如果本机看板打不开，复制下面整行，粘贴到看板「订单与授权」页的第 5 步："));
+  out.appendChild(text("div", target, "box"));
+  if (!demo) setTimeout(function () { location.replace(target); }, 1000);
+} else if (code || state) {
+  out.appendChild(text("p", "收到的参数格式不对，已经停止。", "bad"));
+}
+</script>
+</body>
+</html>
